@@ -18,6 +18,7 @@ type Report struct {
 	TotalTime     time.Duration
 	TotalRequests int
 	StatusCodes   map[int]int
+	Errors        int
 }
 
 func main() {
@@ -73,7 +74,7 @@ func worker(url string, wg *sync.WaitGroup, results chan<- Result, requests int)
 		duration := time.Since(start)
 
 		if err != nil {
-			results <- Result{Error: err}
+			results <- Result{StatusCode: -1, Error: err}
 			continue
 		}
 		results <- Result{StatusCode: resp.StatusCode, Duration: duration}
@@ -86,8 +87,11 @@ func printReport(r Report) {
 	fmt.Printf("Tempo de execução: %v\n", r.TotalTime)
 	fmt.Printf("Requests realizadas: %d\n", r.TotalRequests)
 	fmt.Printf("Total de status 200: %d\n", r.StatusCodes[200])
-	fmt.Printf("\nOutros status:\n")
+	fmt.Printf("Requisições sem sucesso (ex. client-side timeout): %d\n", r.StatusCodes[-1])
+	fmt.Printf("\nTodos os status:\n")
 	for code, count := range r.StatusCodes {
-		fmt.Printf("  HTTP %d: %d\n", code, count)
+		if code != -1 {
+			fmt.Printf("  HTTP %d: %d\n", code, count)
+		}
 	}
 }
